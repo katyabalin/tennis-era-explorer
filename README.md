@@ -1,5 +1,7 @@
 # 🎾 Tennis Era Explorer
 
+**Live app → https://tennis-era-explorer.streamlit.app**
+
 I play Division 1 college tennis, so the sport is pretty much always on my mind. At some point I started wondering whether the best players today are actually different from the best players a decade ago — not just different names, but a different kind of player. Younger? Taller? Built around a different game?
 
 I had the question, so I built something to answer it.
@@ -11,7 +13,7 @@ Pick any two years between 2010 and 2024 and the app shows you:
 - The top 10 ATP players for each year side by side
 - Average age, height, and ranking points with year-over-year deltas
 - Charts comparing how each metric shifted
-- An AI-generated analysis (powered by Claude) that puts the numbers in context — referencing actual players and explaining what the shift means for the sport
+- An AI-generated analysis powered by Claude that puts the numbers in context — referencing actual players and explaining what the data means for the sport
 
 ## What I Found
 
@@ -20,10 +22,18 @@ The 2024 top 10 is about 2-3 years younger and nearly 2 inches taller on average
 ## Stack
 
 - Python, Streamlit, pandas, matplotlib
-- Claude API for AI-generated analysis
+- Claude API (Anthropic) for AI-generated analysis
 - Data from Jeff Sackmann's open-source [tennis_atp](https://github.com/JeffSackmann/tennis_atp) dataset
 
-## Running It Locally
+## What I'd Add Next
+
+- WTA data to compare the women's tour across the same eras
+- A player search feature to track individual career arcs over time
+- Surface breakdown — do top player profiles differ on clay vs hard court?
+
+## Run It Locally
+
+If you want to run it yourself:
 
 ```bash
 git clone https://github.com/katyabalin/tennis-era-explorer.git
@@ -33,25 +43,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file and add your Anthropic API key:
-```
-ANTHROPIC_API_KEY=your-key-here
-```
-
-Download these files from [Jeff Sackmann's repo](https://github.com/JeffSackmann/tennis_atp) and put them in a `data/` folder:
-- `atp_players.csv`
-- `atp_rankings_10s.csv`
-- `atp_rankings_20s.csv`
-- `atp_rankings_current.csv`
-
-Then:
+Download the data files from [Jeff Sackmann's repo](https://github.com/JeffSackmann/tennis_atp) into a `data/` folder, then:
 ```bash
 streamlit run app.py
 ```
-
-## What I'd Add Next
-
-- WTA data so I can compare the women's tour across the same eras
-- A player search feature to track individual career arcs over time
-- Surface breakdown — do top player profiles differ on clay vs hard court?
-- Deploy it so anyone can use it without running it locally
