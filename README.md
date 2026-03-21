@@ -1,8 +1,8 @@
 # 🎾 Tennis Era Explorer
 
-I play Division 1 college tennis, so I spend a lot of time thinking about the sport — not just competing in it. One question I kept coming back to was whether the profile of a top ATP player has actually changed over the years. Are the best players today different from the best players a decade ago? Younger? Taller? More dominant in rankings points?
+I play Division 1 college tennis, so the sport is pretty much always on my mind. At some point I started wondering whether the best players today are actually different from the best players a decade ago — not just different names, but a different kind of player. Younger? Taller? Built around a different game?
 
-I decided to stop wondering and just build something to find out.
+I had the question, so I built something to answer it.
 
 ## What It Does
 
@@ -15,7 +15,7 @@ Pick any two years between 2010 and 2024 and the app shows you:
 
 ## What I Found
 
-The 2024 top 10 is about 2-3 years younger and nearly 5cm taller on average than the 2015 top 10. That's not random — it reflects a real structural shift in how the game is played at the elite level. The serve has become more decisive, and the new generation of players like Sinner and Alcaraz broke through earlier than anyone from the previous era.
+The 2024 top 10 is about 2-3 years younger and nearly 2 inches taller on average than the 2015 top 10. That's not random — it reflects a real structural shift in how the game is played at the elite level. The serve has become more decisive, and the new generation of players like Sinner and Alcaraz broke through earlier than anyone from the previous era.
 
 ## Stack
 
@@ -55,7 +55,3 @@ streamlit run app.py
 - A player search feature to track individual career arcs over time
 - Surface breakdown — do top player profiles differ on clay vs hard court?
 - Deploy it so anyone can use it without running it locally
-
-## Why I Built This
-
-I'm currently applying for APM roles and wanted to build something that combined a genuine passion with real product thinking. Tennis is something I live and breathe as a D1 athlete — so this felt like a natural place to start. The goal was to ship something real, learn from actually building it, and show that I can take an idea from question to working product.
