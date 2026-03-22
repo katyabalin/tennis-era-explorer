@@ -35,7 +35,6 @@ html, body, [class*="css"] {
     color: #c0c0c0 !important;
     font-family: 'Barlow', sans-serif !important;
 }
-
 h1 {
     font-family: 'Barlow Condensed', sans-serif !important;
     font-size: 4rem !important;
@@ -71,7 +70,6 @@ p, li {
     font-size: 1rem !important;
     line-height: 1.7 !important;
 }
-
 [data-testid="stMetric"] {
     background-color: #1a1a1a;
     border: 1px solid #2a2a2a;
@@ -91,14 +89,11 @@ p, li {
     font-weight: 700 !important;
     color: #ffffff !important;
 }
-
 [data-testid="stDataFrame"] {
     border: 1px solid #2a2a2a !important;
     border-radius: 4px !important;
 }
-
 hr { border-color: #2a2a2a !important; margin: 2rem 0 !important; }
-
 [data-testid="stExpander"] {
     background-color: #161616 !important;
     border: 1px solid #2a2a2a !important;
@@ -109,7 +104,6 @@ hr { border-color: #2a2a2a !important; margin: 2rem 0 !important; }
     font-size: 0.75rem !important;
     letter-spacing: 1px !important;
 }
-
 .insight-box {
     background-color: #161616;
     border-left: 3px solid #c9f31d;
@@ -118,7 +112,6 @@ hr { border-color: #2a2a2a !important; margin: 2rem 0 !important; }
     margin: 0.5rem 0;
 }
 .insight-box p { margin: 0 !important; color: #e0e0e0 !important; }
-
 .ai-box {
     background-color: #111;
     border: 1px solid #2a2a2a;
@@ -141,7 +134,6 @@ hr { border-color: #2a2a2a !important; margin: 2rem 0 !important; }
     line-height: 1.8 !important;
     font-weight: 300 !important;
 }
-
 .stButton > button {
     background-color: #c9f31d !important;
     color: #0e0e0e !important;
@@ -154,44 +146,11 @@ hr { border-color: #2a2a2a !important; margin: 2rem 0 !important; }
     border-radius: 3px !important;
     padding: 0.6rem 2rem !important;
 }
-.stButton > button:hover {
-    background-color: #d8ff2a !important;
-}
+.stButton > button:hover { background-color: #d8ff2a !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Load data ────────────────────────────────────────────────────────────────
-@st.cache_data
-def load_data():
-    players = pd.read_csv("data/atp_players.csv", encoding="latin-1")
-    players.columns = ["player_id", "first_name", "last_name", "hand",
-                       "birth_date", "country_code", "height", "wikidata_id"]
-    players["full_name"] = players["first_name"] + " " + players["last_name"]
-    players["player_id"] = players["player_id"].astype(str)
-    players["height"] = pd.to_numeric(players["height"], errors="coerce")
-
-    def load_rankings(path):
-        df = pd.read_csv(path, header=None,
-                         names=["ranking_date", "rank", "player_id", "points"],
-                         low_memory=False)
-        df = df[df["ranking_date"] != "ranking_date"]
-        df["ranking_date"] = df["ranking_date"].astype(str)
-        df["rank"] = pd.to_numeric(df["rank"], errors="coerce")
-        df["points"] = pd.to_numeric(df["points"], errors="coerce")
-        df["player_id"] = df["player_id"].astype(str)
-        return df
-
-    r10s = load_rankings("data/atp_rankings_10s.csv")
-    r20s = load_rankings("data/atp_rankings_20s.csv")
-    rcur = load_rankings("data/atp_rankings_current.csv")
-
-    rankings = pd.concat([r10s, r20s, rcur], ignore_index=True)
-    rankings = rankings.dropna(subset=["rank"])
-    rankings["year"] = rankings["ranking_date"].str[:4]
-    return players, rankings
-
-players, rankings = load_data()
-
+# ── Helper functions ─────────────────────────────────────────────────────────
 def calculate_age(birth_date_str, reference_year):
     try:
         birth_date = datetime.strptime(str(int(birth_date_str)), "%Y%m%d")
@@ -208,6 +167,55 @@ def cm_to_ft_in(cm):
     except:
         return "N/A"
 
+# ── Load data ────────────────────────────────────────────────────────────────
+@st.cache_data
+def load_tour_data(tour):
+    prefix = "atp" if tour == "ATP" else "wta"
+
+    # Load players
+    players = pd.read_csv(f"data/{prefix}_players.csv", encoding="latin-1")
+    players.columns = ["player_id", "first_name", "last_name", "hand",
+                       "birth_date", "country_code", "height", "wikidata_id"]
+    players["full_name"] = players["first_name"] + " " + players["last_name"]
+    players["player_id"] = players["player_id"].astype(str)
+    players["height"] = pd.to_numeric(players["height"], errors="coerce")
+
+    def load_rankings(path):
+        # Peek at first row to detect format
+        peek = pd.read_csv(path, nrows=1, low_memory=False)
+        has_header = "ranking_date" in peek.columns or "rank" in peek.columns
+
+        if has_header:
+            df = pd.read_csv(path, low_memory=False)
+        else:
+            df = pd.read_csv(path, header=None,
+                             names=["ranking_date", "rank", "player_id", "points"],
+                             low_memory=False)
+
+        # Rename player column if WTA style
+        if "player" in df.columns and "player_id" not in df.columns:
+            df = df.rename(columns={"player": "player_id"})
+
+        # Keep only the columns we need
+        df = df[["ranking_date", "rank", "player_id", "points"]].copy()
+
+        # Clean
+        df["ranking_date"] = df["ranking_date"].astype(str).str.strip()
+        df = df[df["ranking_date"].str.fullmatch("[0-9]{8}")]
+        df["rank"] = pd.to_numeric(df["rank"], errors="coerce")
+        df["points"] = pd.to_numeric(df["points"], errors="coerce")
+        df["player_id"] = df["player_id"].astype(str)
+        return df
+
+    r10s = load_rankings(f"data/{prefix}_rankings_10s.csv")
+    r20s = load_rankings(f"data/{prefix}_rankings_20s.csv")
+    rcur = load_rankings(f"data/{prefix}_rankings_current.csv")
+
+    rankings = pd.concat([r10s, r20s, rcur], ignore_index=True)
+    rankings = rankings.dropna(subset=["rank"])
+    rankings["year"] = rankings["ranking_date"].str[:4]
+    return players, rankings
+
 def get_top10(year_str, players_df, rankings_df):
     year_data = rankings_df[rankings_df["year"] == year_str]
     if year_data.empty:
@@ -220,23 +228,19 @@ def get_top10(year_str, players_df, rankings_df):
     top10["height"] = pd.to_numeric(top10["height"], errors="coerce")
     return top10
 
-# ── Claude API call ──────────────────────────────────────────────────────────
-def generate_ai_analysis(year_a, year_b, top_a, top_b,
-                          avg_age_a, avg_age_b,
-                          avg_h_a, avg_h_b,
-                          avg_p_a, avg_p_b):
-
+# ── Claude API ───────────────────────────────────────────────────────────────
+def generate_ai_analysis(tour, year_a, year_b, top_a, top_b,
+                          avg_age_a, avg_age_b, avg_h_a, avg_h_b, avg_p_a, avg_p_b):
     players_a = ", ".join(top_a["full_name"].dropna().tolist())
     players_b = ", ".join(top_b["full_name"].dropna().tolist())
 
     prompt = f"""You are an expert tennis analyst writing for a sports data product.
 
-Compare the ATP top 10 from {year_a} vs {year_b} and write a compelling 3-4 sentence analysis.
+Compare the {tour} top 10 from {year_a} vs {year_b} and write a compelling 3-4 sentence analysis.
 
 Data:
 - {year_a} top 10: {players_a}
 - {year_a} avg age: {avg_age_a:.1f} | avg height: {avg_h_a:.1f}cm | avg points: {avg_p_a:,.0f}
-
 - {year_b} top 10: {players_b}
 - {year_b} avg age: {avg_age_b:.1f} | avg height: {avg_h_b:.1f}cm | avg points: {avg_p_b:,.0f}
 
@@ -257,27 +261,39 @@ Return only the paragraph, no titles or labels."""
     )
     return message.content[0].text
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ── Sidebar ──────────────────────────────────────────────────────────────────
+st.sidebar.markdown("## ⚙️ Settings")
+tour = st.sidebar.radio("Tour", ["ATP", "WTA"], horizontal=True)
+
+players, rankings = load_tour_data(tour)
+
 available_years = sorted(rankings["year"].unique())
 available_years = [y for y in available_years if y.isdigit() and 2010 <= int(y) <= 2024]
 
-st.sidebar.markdown("## ⚙️ Settings")
-year_a = st.sidebar.selectbox("Year A — Earlier", available_years, index=available_years.index("2015"))
-year_b = st.sidebar.selectbox("Year B — Later", available_years, index=available_years.index("2024"))
+if len(available_years) == 0:
+    st.error("No ranking data found. Check your data files.")
+    st.stop()
+
+default_a = "2015" if "2015" in available_years else available_years[0]
+default_b = "2024" if "2024" in available_years else available_years[-1]
+
+year_a = st.sidebar.selectbox("Year A — Earlier", available_years, index=available_years.index(default_a))
+year_b = st.sidebar.selectbox("Year B — Later", available_years, index=available_years.index(default_b))
+
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "<p style='font-size:0.8rem; color:#666; line-height:1.6;'>"
-    "Data from Jeff Sackmann's open-source ATP dataset. "
+    "Data from Jeff Sackmann's open-source tennis dataset. "
     "Rankings taken from the final week of each year.</p>",
     unsafe_allow_html=True
 )
 
-# ── Header ────────────────────────────────────────────────────────────────────
+# ── Header ───────────────────────────────────────────────────────────────────
 st.markdown("# 🎾 Tennis Era Explorer")
 st.markdown(
-    "<p style='font-size:1.1rem; color:#888; margin-top:-0.5rem;'>"
-    "Has the profile of a top ATP player changed over time? "
-    "Pick any two years and find out.</p>",
+    f"<p style='font-size:1.1rem; color:#888; margin-top:-0.5rem;'>"
+    f"Has the profile of a top {tour} player changed over time? "
+    f"Pick any two years and find out.</p>",
     unsafe_allow_html=True
 )
 st.markdown("---")
@@ -294,7 +310,7 @@ if top_a is None or top_b is None:
     st.stop()
 
 # ── Player tables ─────────────────────────────────────────────────────────────
-st.markdown(f"## Top 10 Players — {year_a} vs {year_b}")
+st.markdown(f"## {tour} Top 10 — {year_a} vs {year_b}")
 
 col1, col2 = st.columns(2)
 
@@ -314,7 +330,7 @@ with col1:
 with col2:
     show_table(top_b, year_b)
 
-# ── Metrics ───────────────────────────────────────────────────────────────────
+# ── Metrics ──────────────────────────────────────────────────────────────────
 st.markdown("## Profile Shift")
 
 avg_age_a = top_a["age"].mean()
@@ -326,10 +342,10 @@ avg_p_b   = top_b["points"].mean()
 
 m1, m2, m3 = st.columns(3)
 m1.metric("Avg Age",            f"{avg_age_b:.1f} yrs", f"{avg_age_b - avg_age_a:+.1f} vs {year_a}")
-m2.metric("Avg Height",         f"{cm_to_ft_in(avg_h_b)}",    f"{avg_h_b - avg_h_a:+.1f} vs {year_a}")
+m2.metric("Avg Height",         f"{cm_to_ft_in(avg_h_b)}", f"{avg_h_b - avg_h_a:+.1f} vs {year_a}")
 m3.metric("Avg Ranking Points", f"{avg_p_b:,.0f}",      f"{avg_p_b - avg_p_a:+,.0f} vs {year_a}")
 
-# ── Quick insights ────────────────────────────────────────────────────────────
+# ── Insights ─────────────────────────────────────────────────────────────────
 st.markdown("## What This Means")
 
 age_diff = avg_age_b - avg_age_a
@@ -346,7 +362,7 @@ if abs(age_diff) >= 1:
 if abs(h_diff) >= 1:
     direction = "taller" if h_diff > 0 else "shorter"
     insights.append(
-        f"They are <strong>{cm_to_ft_in(avg_h_b)} avg height ({"taller" if h_diff > 0 else "shorter"})</strong> — "
+        f"They are <strong>{cm_to_ft_in(avg_h_b)} avg height ({direction})</strong> — "
         + ("the game increasingly favours bigger servers and longer reach." if h_diff > 0
            else "agility is gaining an edge over raw power.")
     )
@@ -364,11 +380,10 @@ if insights:
 else:
     st.markdown('<div class="insight-box"><p>These two eras look surprisingly similar across all three metrics.</p></div>', unsafe_allow_html=True)
 
-# ── AI Analysis ───────────────────────────────────────────────────────────────
+# ── AI Analysis ──────────────────────────────────────────────────────────────
 st.markdown("## AI Analysis")
 
-# Reset analysis when years change
-cache_key = f"{year_a}_{year_b}"
+cache_key = f"{tour}_{year_a}_{year_b}"
 if "analysis_cache_key" not in st.session_state or st.session_state.analysis_cache_key != cache_key:
     st.session_state.analysis_text = None
     st.session_state.analysis_cache_key = cache_key
@@ -377,10 +392,8 @@ if st.button("✦ Generate AI Analysis"):
     with st.spinner("Analysing era data..."):
         try:
             analysis = generate_ai_analysis(
-                year_a, year_b, top_a, top_b,
-                avg_age_a, avg_age_b,
-                avg_h_a, avg_h_b,
-                avg_p_a, avg_p_b
+                tour, year_a, year_b, top_a, top_b,
+                avg_age_a, avg_age_b, avg_h_a, avg_h_b, avg_p_a, avg_p_b
             )
             st.session_state.analysis_text = analysis
         except Exception as e:
@@ -389,13 +402,13 @@ if st.button("✦ Generate AI Analysis"):
 if st.session_state.get("analysis_text"):
     st.markdown(
         f'<div class="ai-box">'
-        f'<div class="ai-label">✦ AI Analysis — {year_a} vs {year_b}</div>'
+        f'<div class="ai-label">✦ AI Analysis — {tour} {year_a} vs {year_b}</div>'
         f'<p>{st.session_state.analysis_text}</p>'
         f'</div>',
         unsafe_allow_html=True
     )
 
-# ── Charts ─────────────────────────────────────────────────────────────────────
+# ── Charts ────────────────────────────────────────────────────────────────────
 st.markdown("## Charts")
 
 mpl.rcParams.update({
@@ -412,7 +425,7 @@ mpl.rcParams.update({
 
 fig, axes = plt.subplots(1, 3, figsize=(14, 4.5))
 fig.patch.set_facecolor("#0e0e0e")
-fig.suptitle(f"{year_a}  →  {year_b}   |   Top 10 ATP Players",
+fig.suptitle(f"{tour} — {year_a}  →  {year_b}   |   Top 10 Players",
              fontsize=11, color="#666", fontweight="normal", y=1.02)
 
 bar_colors = ["#3a3a3a", "#c9f31d"]
@@ -454,4 +467,4 @@ with st.expander("View raw data"):
         st.caption(f"{year_b} — ranking date: {sorted(rankings[rankings['year'] == year_b]['ranking_date'].unique())[-1]}")
 
 st.markdown("---")
-st.caption("Data: Jeff Sackmann / tennis_atp on GitHub · Built with Python & Streamlit · AI analysis powered by Claude")
+st.caption("Data: Jeff Sackmann / tennis_atp & tennis_wta on GitHub · Built with Python & Streamlit · AI analysis powered by Claude")
