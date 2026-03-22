@@ -10,26 +10,27 @@ I had the question, so I built something to answer it.
 
 Pick any two years between 2010 and 2024 and the app shows you:
 
-- The top 10 ATP players for each year side by side
+- The top 10 ATP or WTA players for each year side by side
 - Average age, height, and ranking points with year-over-year deltas
 - Charts comparing how each metric shifted
 - An AI-generated analysis powered by Claude that puts the numbers in context — referencing actual players and explaining what the data means for the sport
 
 ## What I Found
 
-The 2024 top 10 is about 2-3 years younger and nearly 2 inches taller on average than the 2015 top 10. That's not random — it reflects a real structural shift in how the game is played at the elite level. The serve has become more decisive, and the new generation of players like Sinner and Alcaraz broke through earlier than anyone from the previous era.
+The ATP and WTA tell very different stories across the same time period — I'll let the data speak for itself. Try it and see what you find.
 
 ## Stack
 
 - Python, Streamlit, pandas, matplotlib
 - Claude API (Anthropic) for AI-generated analysis
-- Data from Jeff Sackmann's open-source [tennis_atp](https://github.com/JeffSackmann/tennis_atp) dataset
+- Data from Jeff Sackmann's open-source [tennis_atp](https://github.com/JeffSackmann/tennis_atp) and [tennis_wta](https://github.com/JeffSackmann/tennis_wta) datasets
 
 ## What I'd Add Next
 
-- WTA data to compare the women's tour across the same eras
-- A player search feature to track individual career arcs over time
+- Player search — look up any individual player's career arc over time
 - Surface breakdown — do top player profiles differ on clay vs hard court?
+- Shareable links so you can send a specific year comparison to someone
+- Deploy with more historical data going back to the 1990s
 
 ## Run It Locally
 
@@ -43,7 +44,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Download the data files from [Jeff Sackmann's repo](https://github.com/JeffSackmann/tennis_atp) into a `data/` folder, then:
+Download the ATP and WTA data files from [Jeff Sackmann's repos](https://github.com/JeffSackmann) into a `data/` folder, then:
+
 ```bash
 streamlit run app.py
 ```
