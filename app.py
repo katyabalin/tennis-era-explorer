@@ -341,9 +341,10 @@ avg_p_a   = top_a["points"].mean()
 avg_p_b   = top_b["points"].mean()
 
 m1, m2, m3 = st.columns(3)
-m1.metric("Avg Age",            f"{avg_age_b:.1f} yrs", f"{avg_age_b - avg_age_a:+.1f} vs {year_a}")
-m2.metric("Avg Height",         f"{cm_to_ft_in(avg_h_b)}", f"{avg_h_b - avg_h_a:+.1f} vs {year_a}")
-m3.metric("Avg Ranking Points", f"{avg_p_b:,.0f}",      f"{avg_p_b - avg_p_a:+,.0f} vs {year_a}")
+h_diff_inches = (avg_h_b - avg_h_a) / 2.54
+m1.metric("Avg Age",            f"{avg_age_b:.1f} yrs", f"{avg_age_b - avg_age_a:+.1f} yrs vs {year_a}")
+m2.metric("Avg Height",         f"{cm_to_ft_in(avg_h_b)}", f"{h_diff_inches:+.1f} in vs {year_a}")
+m3.metric("Avg Ranking Points", f"{avg_p_b:,.0f}",      f"{avg_p_b - avg_p_a:+,.0f} pts vs {year_a}")
 
 # ── Insights ─────────────────────────────────────────────────────────────────
 st.markdown("## What This Means")
